@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trackify — Print</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    html, body { margin: 0; padding: 0; background: #0b0b0c; font-family: 'Geist', system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    * { box-sizing: border-box; }
+
+    /* Each page is sized exactly A4 in pixels (assuming 96dpi) so the phone
+       frame scales predictably on screen and in PDF. */
+    .page {
+      width: 210mm; height: 297mm;
+      background: #0b0b0c; color: #f6f6f7;
+      position: relative;
+      page-break-after: always; break-after: page;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+
+    /* Header band */
+    .page-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18mm 18mm 0;
+    }
+    .head-section {
+      font-family: 'Geist Mono', monospace; font-size: 9pt;
+      letter-spacing: 1.4pt; text-transform: uppercase; color: #76767c;
+    }
+    .head-brand {
+      font-family: 'Geist Mono', monospace; font-size: 8pt;
+      letter-spacing: 1.6pt; text-transform: uppercase; color: #76767c;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .head-brand-mark { width: 16px; height: 16px; display: inline-flex; }
+    .head-brand-mark svg { width: 16px; height: 16px; }
+
+    .page-title {
+      padding: 4mm 18mm 0;
+      font-family: 'Geist', sans-serif;
+      font-size: 28pt; font-weight: 600; letter-spacing: -1pt; line-height: 1.1;
+    }
+    .page-sub {
+      padding: 1.5mm 18mm 0;
+      font-family: 'Geist Mono', monospace;
+      font-size: 9pt; letter-spacing: 0.8pt; color: #b8b8bd;
+    }
+
+    .page-frame {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 8mm;
+      position: relative;
+    }
+    .page-frame::before {
+      content: ''; position: absolute; inset: 8mm 18mm;
+      background: radial-gradient(ellipse at center, rgba(200,255,61,0.06), transparent 65%);
+    }
+
+    /* The IOSDevice is 402×874. On A4 portrait inside ~190mm wide content
+       area we can fit a 402×874 device at ~0.6 scale comfortably with
+       headers above and a footer below. */
+    .device-host {
+      transform: scale(0.62);
+      transform-origin: top center;
+      width: 402px; height: 874px;
+      position: relative; z-index: 1;
+    }
+
+    .page-foot {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 0 18mm 14mm;
+      font-family: 'Geist Mono', monospace; font-size: 8pt;
+      color: #76767c; letter-spacing: 1.4pt; text-transform: uppercase;
+    }
+
+    /* Cover page */
+    .cover {
+      align-items: stretch; justify-content: space-between;
+      padding: 24mm;
+    }
+    .cover-top {
+      display: flex; flex-direction: column; gap: 12mm;
+    }
+    .cover-mark {
+      width: 18mm; height: 18mm; border-radius: 6mm; background: #f6f6f7;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cover-mark svg { width: 10mm; height: 10mm; }
+    .cover-title {
+      font-family: 'Geist', sans-serif;
+      font-size: 96pt; font-weight: 600; letter-spacing: -4pt;
+      line-height: 0.92; margin: 0;
+    }
+    .cover-tagline {
+      font-family: 'Geist', sans-serif;
+      font-size: 18pt; color: #b8b8bd; line-height: 1.35;
+      max-width: 130mm; margin-top: 6mm;
+    }
+    .cover-meta {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm;
+      padding-top: 10mm; border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .cover-meta-block .lbl {
+      font-family: 'Geist Mono', monospace; font-size: 8pt;
+      color: #76767c; text-transform: uppercase; letterSpacing: 1.4pt;
+    }
+    .cover-meta-block .val {
+      font-family: 'Geist Mono', monospace; font-size: 22pt;
+      color: #f6f6f7; margin-top: 2mm; font-variant-numeric: tabular-nums;
+      letter-spacing: -0.6pt;
+    }
+    .cover-foot {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: 'Geist Mono', monospace; font-size: 8pt;
+      color: #76767c; letter-spacing: 1.6pt; text-transform: uppercase;
+    }
+
+    /* Section divider page */
+    .divider {
+      align-items: center; justify-content: center;
+      padding: 24mm; flex-direction: column;
+    }
+    .divider-num {
+      font-family: 'Geist Mono', monospace; font-size: 14pt;
+      color: #c8ff3d; letter-spacing: 4pt; margin-bottom: 12mm;
+    }
+    .divider-title {
+      font-size: 72pt; font-weight: 600; letter-spacing: -3pt; line-height: 1; margin: 0;
+      text-align: center;
+    }
+    .divider-sub {
+      margin-top: 8mm; font-size: 16pt; color: #b8b8bd; text-align: center;
+      max-width: 140mm;
+    }
+
+    /* Screen-only chrome — hidden in print */
+    @media screen {
+      body { padding: 24px 0; }
+      .page { margin: 0 auto 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
+    }
+    @media print {
+      body { padding: 0; background: white; }
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <!-- COVER -->
+  <div class="page cover">
+    <div class="cover-top">
+      <div class="cover-mark">
+        <svg viewBox="0 0 100 100">
+          <path d="M22 62 L40 44 L52 56 L78 30" stroke="#c8ff3d" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="78" cy="30" r="5" fill="#c8ff3d"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="cover-title">Trackify.</h1>
+        <p class="cover-tagline">App-Design — Login, Training, Cardio, Körper, Labor &amp; Supplements. iOS, Dark/Light, ein Akzent.</p>
+      </div>
+    </div>
+    <div>
+      <div class="cover-meta">
+        <div class="cover-meta-block">
+          <div class="lbl">Screens</div>
+          <div class="val">19</div>
+        </div>
+        <div class="cover-meta-block">
+          <div class="lbl">Sektionen</div>
+          <div class="val">7</div>
+        </div>
+        <div class="cover-meta-block">
+          <div class="lbl">Version</div>
+          <div class="val">1.0</div>
+        </div>
+      </div>
+      <div class="cover-foot" style="margin-top: 14mm">
+        <span>Trackify · Design Spec · Mai 2026</span>
+        <span>v1.0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section pages are generated by JS to keep this file maintainable -->
+  <div id="pages-root"></div>
+
+  <!-- Same source as Trackify.html -->
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tokens.jsx"></script>
+  <script type="text/babel" src="screens-auth.jsx"></script>
+  <script type="text/babel" src="screens-home.jsx"></script>
+  <script type="text/babel" src="screens-training.jsx"></script>
+  <script type="text/babel" src="screens-cardio.jsx"></script>
+  <script type="text/babel" src="screens-body.jsx"></script>
+  <script type="text/babel" src="screens-lab.jsx"></script>
+  <script type="text/babel" src="screens-supplements.jsx"></script>
+  <script type="text/babel" src="screens-profile.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const sections = [
+      {
+        id: 1, name: 'Auth', sub: 'Onboarding, Login & Registrierung',
+        screens: [
+          { id: 'splash',      label: 'Splash',          Comp: SplashScreen },
+          { id: 'onboarding',  label: 'Onboarding · 02/03', Comp: OnboardingScreen },
+          { id: 'login',       label: 'Login',           Comp: LoginScreen },
+          { id: 'register',    label: 'Registrieren',    Comp: RegisterScreen },
+        ],
+      },
+      {
+        id: 2, name: 'Home', sub: 'Tages-Übersicht',
+        screens: [
+          { id: 'home', label: 'Dashboard', Comp: HomeScreen },
+        ],
+      },
+      {
+        id: 3, name: 'Training', sub: 'Plan · Übung · Live-Workout',
+        screens: [
+          { id: 'plan',      label: 'Trainingsplan',     Comp: TrainingPlanScreen },
+          { id: 'exercise',  label: 'Übung · Detail',    Comp: ExerciseDetailScreen },
+          { id: 'active',    label: 'Aktives Workout',   Comp: ActiveWorkoutScreen },
+        ],
+      },
+      {
+        id: 4, name: 'Cardio', sub: 'Lauf-Tracking & Historie',
+        screens: [
+          { id: 'run-live',     label: 'Lauf · Live',    Comp: RunLiveScreen },
+          { id: 'run-history',  label: 'Lauf · Historie', Comp: RunHistoryScreen },
+        ],
+      },
+      {
+        id: 5, name: 'Körper', sub: 'Gewicht · Körperfett · Maße',
+        screens: [
+          { id: 'weight',   label: 'Gewicht',   Comp: WeightScreen },
+          { id: 'bf',       label: 'Körperfett', Comp: BodyFatScreen },
+          { id: 'measure',  label: 'Körpermaße', Comp: MeasurementsScreen },
+        ],
+      },
+      {
+        id: 6, name: 'Labor & Blutwerte', sub: 'Marker · Trend · Eintragen',
+        screens: [
+          { id: 'lab-overview', label: 'Übersicht',  Comp: LabOverviewScreen },
+          { id: 'lab-marker',   label: 'Marker · Detail (Vitamin D)', Comp: LabMarkerDetailScreen },
+          { id: 'lab-add',      label: 'Neue Messung · Scan', Comp: LabAddScreen },
+        ],
+      },
+      {
+        id: 7, name: 'Supplements & Meds', sub: 'Tagesplan · Detail · Neu',
+        screens: [
+          { id: 'sup-overview', label: 'Tagesplan',          Comp: SupplementOverviewScreen },
+          { id: 'sup-detail',   label: 'Detail · Vitamin D3', Comp: SupplementDetailScreen },
+          { id: 'sup-add',      label: 'Neu hinzufügen',     Comp: SupplementAddScreen },
+        ],
+      },
+      {
+        id: 8, name: 'Insights & Profil', sub: 'Statistik · Settings',
+        screens: [
+          { id: 'insights', label: 'Insights',           Comp: InsightsScreen },
+          { id: 'profile',  label: 'Profil · Settings',  Comp: ProfileScreen },
+        ],
+      },
+    ];
+
+    // Flatten + count
+    const allScreens = sections.flatMap(s => s.screens.map(scr => ({ ...scr, section: s })));
+    const totalScreens = allScreens.length;
+
+    function BrandMark() {
+      return (
+        <div className="head-brand-mark">
+          <svg viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#f6f6f7"/><path d="M22 62 L40 44 L52 56 L78 30" stroke="#c8ff3d" strokeWidth="9" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="78" cy="30" r="5" fill="#c8ff3d"/></svg>
+        </div>
+      );
+    }
+
+    function DividerPage({ section, idx, total }) {
+      return (
+        <div className="page divider">
+          <div className="divider-num">{String(section.id).padStart(2,'0')} / {String(total).padStart(2,'0')}</div>
+          <h2 className="divider-title">{section.name}.</h2>
+          <p className="divider-sub">{section.sub}</p>
+        </div>
+      );
+    }
+
+    function ScreenPage({ scr, index, total }) {
+      return (
+        <div className="page">
+          <div className="page-head">
+            <span className="head-section">{scr.section.name} · {scr.section.screens.findIndex(x => x.id === scr.id) + 1} / {scr.section.screens.length}</span>
+            <span className="head-brand"><BrandMark/> Trackify</span>
+          </div>
+          <div className="page-title">{scr.label}</div>
+          <div className="page-sub">{scr.section.sub}</div>
+          <div className="page-frame">
+            <div className="device-host">
+              <ThemeCtx.Provider value={themes.dark}>
+                <IOSDevice dark={true}>
+                  <scr.Comp/>
+                </IOSDevice>
+              </ThemeCtx.Provider>
+            </div>
+          </div>
+          <div className="page-foot">
+            <span>{scr.section.name}</span>
+            <span>{String(index).padStart(2,'0')} / {String(total).padStart(2,'0')}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function Pages() {
+      const elems = [];
+      let pageNum = 2; // cover is page 1
+      sections.forEach(section => {
+        elems.push(<DividerPage key={`d-${section.id}`} section={section} total={sections.length}/>);
+        pageNum++;
+        section.screens.forEach(scr => {
+          elems.push(<ScreenPage key={scr.id} scr={{...scr, section}} index={pageNum - 1} total={totalScreens + sections.length + 1}/>);
+          pageNum++;
+        });
+      });
+      return <>{elems}</>;
+    }
+
+    ReactDOM.createRoot(document.getElementById('pages-root')).render(<Pages/>);
+
+    // Auto-print after fonts + a small settle delay
+    (async () => {
+      try { await document.fonts.ready; } catch {}
+      await new Promise(r => setTimeout(r, 700));
+      window.print();
+    })();
+  </script>
+</body>
+</html>

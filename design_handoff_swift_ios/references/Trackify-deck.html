@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trackify — Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    html, body { margin: 0; padding: 0; background: #0b0b0c; font-family: 'Geist', system-ui, sans-serif; color: #f6f6f7; }
+    * { box-sizing: border-box; }
+    deck-stage > section {
+      width: 1920px; height: 1080px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      background: #0b0b0c; color: #f6f6f7;
+      position: relative;
+    }
+    .slide-left {
+      padding: 96px 80px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .slide-eyebrow {
+      font-family: 'Geist Mono', monospace; font-size: 16px; letter-spacing: 2px;
+      text-transform: uppercase; color: #76767c;
+    }
+    .slide-title {
+      font-family: 'Geist', sans-serif; font-size: 96px; font-weight: 600;
+      letter-spacing: -3.5px; line-height: 0.95; margin: 24px 0 0;
+    }
+    .slide-sub {
+      font-size: 22px; color: #b8b8bd; max-width: 540px; line-height: 1.4; margin-top: 28px;
+    }
+    .slide-meta {
+      display: flex; gap: 24px; align-items: center;
+      font-family: 'Geist Mono', monospace; font-size: 14px; color: #76767c;
+      letter-spacing: 1.2px; text-transform: uppercase;
+    }
+    .slide-meta .badge {
+      padding: 6px 12px; border: 1px solid rgba(255,255,255,0.14); border-radius: 999px;
+    }
+    .slide-meta .accent {
+      background: #c8ff3d; color: #0b0b0c; border: none; font-weight: 600;
+    }
+    .slide-num {
+      font-family: 'Geist Mono', monospace; font-size: 14px; color: #76767c;
+      letter-spacing: 2px;
+    }
+    .slide-right {
+      display: flex; align-items: center; justify-content: center;
+      position: relative; padding: 60px;
+    }
+    .slide-right::before {
+      content: ''; position: absolute; inset: 60px; border-radius: 8px;
+      background: radial-gradient(circle at center, rgba(200,255,61,0.08), transparent 60%);
+    }
+    .phone-shell {
+      width: 480px; height: 1040px; position: relative; z-index: 1;
+      border-radius: 58px;
+      box-shadow: 0 60px 100px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    /* Cover / divider slides */
+    .cover {
+      grid-template-columns: 1fr !important;
+      align-items: center; padding: 0;
+    }
+    .cover .slide-left {
+      padding: 0 120px; justify-content: center;
+    }
+    .cover-logo {
+      width: 80px; height: 80px; border-radius: 22px; background: #f6f6f7;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 48px;
+    }
+    .cover-title {
+      font-size: 200px; font-weight: 600; letter-spacing: -8px; line-height: 0.92;
+      margin: 0;
+    }
+    .cover-sub {
+      margin-top: 32px; font-size: 28px; color: #b8b8bd; max-width: 700px; line-height: 1.4;
+    }
+    .cover-meta {
+      position: absolute; bottom: 80px; left: 120px; right: 120px;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      font-family: 'Geist Mono', monospace; font-size: 14px; color: #76767c; letter-spacing: 2px;
+    }
+    .section-divider {
+      grid-template-columns: 1fr !important; align-items: center;
+    }
+    .section-divider .slide-left {
+      padding: 0 120px; justify-content: center;
+    }
+    .section-num {
+      font-family: 'Geist Mono', monospace; font-size: 32px; color: #c8ff3d;
+      letter-spacing: 6px; margin-bottom: 32px;
+    }
+    .section-title {
+      font-size: 144px; font-weight: 600; letter-spacing: -5px; line-height: 0.95; margin: 0;
+    }
+    .section-sub {
+      margin-top: 28px; font-size: 28px; color: #b8b8bd; max-width: 900px;
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="deck-stage.js"></script>
+</head>
+<body>
+
+  <deck-stage width="1920" height="1080">
+
+    <!-- Cover -->
+    <section data-screen-label="01 Cover" class="cover">
+      <div class="slide-left">
+        <div class="cover-logo">
+          <svg width="48" height="48" viewBox="0 0 100 100">
+            <path d="M22 62 L40 44 L52 56 L78 30" stroke="#c8ff3d" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="78" cy="30" r="5" fill="#c8ff3d"/>
+          </svg>
+        </div>
+        <h1 class="cover-title">Trackify.</h1>
+        <p class="cover-sub">App-Design — Login, Training, Cardio &amp; Körper-Tracking. iOS, Dark/Light, ein Akzent. 15 Screens, ein System.</p>
+        <div class="cover-meta">
+          <span>v 1.0 · MAI 2026</span>
+          <span>15 SCREENS · 6 FLOWS</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. ONBOARDING & AUTH -->
+    <section data-screen-label="02 Section · Auth" class="section-divider">
+      <div class="slide-left">
+        <div class="section-num">01 / 06</div>
+        <h2 class="section-title">Onboarding<br/>&amp; Auth.</h2>
+        <p class="section-sub">Splash, 3-Step-Onboarding, Login &amp; Registrierung mit Google / Apple.</p>
+      </div>
+    </section>
+
+    <!-- Screens placeholder containers — filled by React on init -->
+    <section data-screen-label="03 Splash" data-screen="splash">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Auth · 01 / 04</div>
+          <h2 class="slide-title">Splash.</h2>
+          <p class="slide-sub">Stiller Auftakt. Logomark, Wortmarke, Tagline — kein Marketing-Lärm.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Brand</span>
+          <span class="badge">Logo · Wortmarke</span>
+          <span>3,2s vor Auto-Skip</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="splash"></div></div>
+    </section>
+
+    <section data-screen-label="04 Onboarding" data-screen="onboarding">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Auth · 02 / 04</div>
+          <h2 class="slide-title">Onboarding.</h2>
+          <p class="slide-sub">Drei Slides, ein Versprechen: deine Daten, dein Fortschritt — sichtbar gemacht. Skip immer erreichbar.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">3 / 6 Steps</span>
+          <span class="badge">Stat-Vorschau live</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="onboarding"></div></div>
+    </section>
+
+    <section data-screen-label="05 Login" data-screen="login">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Auth · 03 / 04</div>
+          <h2 class="slide-title">Login.</h2>
+          <p class="slide-sub">E-Mail / Passwort + Continue with Google / Apple. „Vergessen?“ klein, aber präsent.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Email / Pwd</span>
+          <span class="badge">Google · Apple</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="login"></div></div>
+    </section>
+
+    <section data-screen-label="06 Register" data-screen="register">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Auth · 04 / 04</div>
+          <h2 class="slide-title">Registrieren.</h2>
+          <p class="slide-sub">Name, E-Mail, Passwort, AGB. 30 Sekunden. Social-Sign-up in einer Zeile.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">3 Felder</span>
+          <span class="badge">Social-Signup</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="register"></div></div>
+    </section>
+
+    <!-- 2. HOME -->
+    <section data-screen-label="07 Section · Home" class="section-divider">
+      <div class="slide-left">
+        <div class="section-num">02 / 06</div>
+        <h2 class="section-title">Home.</h2>
+        <p class="section-sub">Heute auf einen Blick: nächstes Workout, Wochen-Streak, Volumen-Trend, Quick-Track.</p>
+      </div>
+    </section>
+
+    <section data-screen-label="08 Dashboard" data-screen="home">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Home · Dashboard</div>
+          <h2 class="slide-title">Heute.</h2>
+          <p class="slide-sub">Hero-Karte mit dem Tages-Workout. Darunter Streak-Tracker, Volumen-Sparkline, Schnell-Eintrag für Lauf / Gewicht / Maße.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Hero CTA</span>
+          <span class="badge">Wochen-Grid</span>
+          <span class="badge">Trend · 7T</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="home"></div></div>
+    </section>
+
+    <!-- 3. TRAINING -->
+    <section data-screen-label="09 Section · Training" class="section-divider">
+      <div class="slide-left">
+        <div class="section-num">03 / 06</div>
+        <h2 class="section-title">Training.</h2>
+        <p class="section-sub">Plan, Übung-Detail, Live-Tracking. Reps · Sätze · RIR.</p>
+      </div>
+    </section>
+
+    <section data-screen-label="10 Plan" data-screen="plan">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Training · 01 / 03</div>
+          <h2 class="slide-title">Plan.</h2>
+          <p class="slide-sub">4-Tage-Split (Push · Pull · Legs · Upper) plus freies Workout. Heute hervorgehoben, morgen vorbereitet.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">4-Tage Split</span>
+          <span class="badge">+ Frei</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="plan"></div></div>
+    </section>
+
+    <section data-screen-label="11 Exercise Detail" data-screen="exercise">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Training · 02 / 03</div>
+          <h2 class="slide-title">Übung.</h2>
+          <p class="slide-sub">1RM-Schätzung, letzter Wert, Volumen-Trend über 4 Wochen, vollständiger Verlauf. Demo-Video als Loop.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">1RM est.</span>
+          <span class="badge">4-Wochen Chart</span>
+          <span class="badge">Verlauf</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="exercise"></div></div>
+    </section>
+
+    <section data-screen-label="12 Active Workout" data-screen="active">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Training · 03 / 03</div>
+          <h2 class="slide-title">Live.</h2>
+          <p class="slide-sub">Großer Timer, Volumen-Anzeige, Satz-Tabelle (Kg · Wdh · RIR), eingebauter Rest-Timer mit Skip. Ein Daumen reicht.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Sätze · RIR</span>
+          <span class="badge">Rest-Timer</span>
+          <span class="badge">Volumen live</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="active"></div></div>
+    </section>
+
+    <!-- 4. CARDIO -->
+    <section data-screen-label="13 Section · Cardio" class="section-divider">
+      <div class="slide-left">
+        <div class="section-num">04 / 06</div>
+        <h2 class="section-title">Cardio.</h2>
+        <p class="section-sub">Live-Lauf-Tracking und Historie. Distanz, Pace, Höhenmeter, Splits, Route.</p>
+      </div>
+    </section>
+
+    <section data-screen-label="14 Run Live" data-screen="run-live">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Cardio · 01 / 02</div>
+          <h2 class="slide-title">Live-Lauf.</h2>
+          <p class="slide-sub">Distanz groß, Zeit · Pace · BPM darunter. Höhenprofil als Sparkline. Splits pro Kilometer mit „Best“-Highlight.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">GPS</span>
+          <span class="badge">Höhenmeter</span>
+          <span class="badge">Splits</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="run-live"></div></div>
+    </section>
+
+    <section data-screen-label="15 Run History" data-screen="run-history">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Cardio · 02 / 02</div>
+          <h2 class="slide-title">Historie.</h2>
+          <p class="slide-sub">Monatszusammenfassung mit Wochen-Bars und Ø-Pace. Lauf-Liste mit Mini-Karten, Detail-View mit Hero-Route.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Karte</span>
+          <span class="badge">Mini-Maps</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="run-history"></div></div>
+    </section>
+
+    <!-- 5. KÖRPER -->
+    <section data-screen-label="16 Section · Körper" class="section-divider">
+      <div class="slide-left">
+        <div class="section-num">05 / 06</div>
+        <h2 class="section-title">Körper.</h2>
+        <p class="section-sub">Gewicht, Körperfett, Maße. Trends mit Zielen, mehrere Mess-Methoden.</p>
+      </div>
+    </section>
+
+    <section data-screen-label="17 Weight" data-screen="weight">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Körper · 01 / 03</div>
+          <h2 class="slide-title">Gewicht.</h2>
+          <p class="slide-sub">Linien-Chart mit Ziel-Linie. Aktueller Wert, 7-Tage-Mittel, BMI. Einträge mit Tages-Delta.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Ziel-Linie</span>
+          <span class="badge">7T Ø</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="weight"></div></div>
+    </section>
+
+    <section data-screen-label="18 Body Fat" data-screen="bf">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Körper · 02 / 03</div>
+          <h2 class="slide-title">Körperfett.</h2>
+          <p class="slide-sub">Ring-Indikator, 6-Monats-Verlauf. Mess-Methode wählbar: Caliper · BIA · Bilder-Schätzung.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">3 Methoden</span>
+          <span class="badge">6-Monats Trend</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="bf"></div></div>
+    </section>
+
+    <section data-screen-label="19 Measurements" data-screen="measure">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Körper · 03 / 03</div>
+          <h2 class="slide-title">Körpermaße.</h2>
+          <p class="slide-sub">Silhouette mit Tags. Brust · Bizeps · Taille · Hüfte · Schenkel · Wade. Diese-Woche-Übersicht für sekundäre Maße.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">6 Hauptmaße</span>
+          <span class="badge">+ Sekundäre</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="measure"></div></div>
+    </section>
+
+    <!-- 6. INSIGHTS & PROFIL -->
+    <section data-screen-label="20 Section · Insights" class="section-divider">
+      <div class="slide-left">
+        <div class="section-num">06 / 06</div>
+        <h2 class="section-title">Insights<br/>&amp; Profil.</h2>
+        <p class="section-sub">Streak, PRs, Volumen pro Muskelgruppe. Settings, Geräte, Konto.</p>
+      </div>
+    </section>
+
+    <section data-screen-label="21 Insights" data-screen="insights">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Profil · 01 / 02</div>
+          <h2 class="slide-title">Insights.</h2>
+          <p class="slide-sub">Aktive Streak in Wochen, persönliche Bestleistungen, Volumen pro Muskelgruppe. Ein Hinweis von der App, wenn etwas auffällt.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Streak</span>
+          <span class="badge">PRs</span>
+          <span class="badge">AI Note</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="insights"></div></div>
+    </section>
+
+    <section data-screen-label="22 Profile" data-screen="profile">
+      <div class="slide-left">
+        <div>
+          <div class="slide-eyebrow">Profil · 02 / 02</div>
+          <h2 class="slide-title">Profil.</h2>
+          <p class="slide-sub">User-Karte mit Lifetime-Stats. Settings in drei Gruppen: Persönlich · App · Konto. Pro-Badge sichtbar.</p>
+        </div>
+        <div class="slide-meta">
+          <span class="badge accent">Pro</span>
+          <span class="badge">Settings</span>
+        </div>
+      </div>
+      <div class="slide-right"><div class="phone-shell" data-mount="profile"></div></div>
+    </section>
+
+    <!-- End -->
+    <section data-screen-label="23 End" class="cover">
+      <div class="slide-left">
+        <div class="cover-logo">
+          <svg width="48" height="48" viewBox="0 0 100 100">
+            <path d="M22 62 L40 44 L52 56 L78 30" stroke="#c8ff3d" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="78" cy="30" r="5" fill="#c8ff3d"/>
+          </svg>
+        </div>
+        <h1 class="cover-title">Danke.</h1>
+        <p class="cover-sub">Fragen, Variationen, andere Akzente — sag Bescheid.</p>
+        <div class="cover-meta">
+          <span>TRACKIFY · 2026</span>
+          <span>END</span>
+        </div>
+      </div>
+    </section>
+  </deck-stage>
+
+  <!-- Mount React screens into each .phone-shell -->
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tokens.jsx"></script>
+  <script type="text/babel" src="screens-auth.jsx"></script>
+  <script type="text/babel" src="screens-home.jsx"></script>
+  <script type="text/babel" src="screens-training.jsx"></script>
+  <script type="text/babel" src="screens-cardio.jsx"></script>
+  <script type="text/babel" src="screens-body.jsx"></script>
+  <script type="text/babel" src="screens-profile.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const screenMap = {
+      'splash': SplashScreen,
+      'onboarding': OnboardingScreen,
+      'login': LoginScreen,
+      'register': RegisterScreen,
+      'home': HomeScreen,
+      'plan': TrainingPlanScreen,
+      'exercise': ExerciseDetailScreen,
+      'active': ActiveWorkoutScreen,
+      'run-live': RunLiveScreen,
+      'run-history': RunHistoryScreen,
+      'weight': WeightScreen,
+      'bf': BodyFatScreen,
+      'measure': MeasurementsScreen,
+      'insights': InsightsScreen,
+      'profile': ProfileScreen,
+    };
+
+    function mount() {
+      document.querySelectorAll('[data-mount]').forEach(el => {
+        const key = el.getAttribute('data-mount');
+        const Comp = screenMap[key];
+        if (!Comp) return;
+        ReactDOM.createRoot(el).render(
+          <ThemeCtx.Provider value={themes.dark}>
+            <div style={{ width: 480, height: 1040, borderRadius: 58, overflow: 'hidden', position: 'relative', background: '#000' }}>
+              <div style={{
+                position: 'absolute', top: 13, left: '50%', transform: 'translateX(-50%)',
+                width: 150, height: 44, borderRadius: 28, background: '#000', zIndex: 50,
+              }}/>
+              <div style={{ width: 480, height: 1040, transform: 'scale(1.194)', transformOrigin: 'top left' }}>
+                <div style={{ width: 402, height: 871 }}>
+                  <Comp/>
+                </div>
+              </div>
+              <div style={{
+                position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
+                width: 166, height: 6, borderRadius: 4, background: 'rgba(255,255,255,0.7)', zIndex: 60,
+              }}/>
+            </div>
+          </ThemeCtx.Provider>
+        );
+      });
+    }
+    // wait for all JSX scripts to load
+    setTimeout(mount, 100);
+  </script>
+</body>
+</html>

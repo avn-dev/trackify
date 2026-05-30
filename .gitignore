@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# iOS / Xcode
+*.xcuserstate
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcworkspace
+!*.xcodeproj/*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+
+# Laravel backend
+backend/.env
+backend/vendor/
+backend/node_modules/
+backend/database/database.sqlite
+backend/storage/logs/*.log
+backend/bootstrap/cache/*.php
+backend/.phpunit.result.cache
+backend/public/hot
+backend/public/build/
+
+# Editor
+.vscode/
+.idea/
+*.swp
