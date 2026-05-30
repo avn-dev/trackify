@@ -2,7 +2,7 @@
 # Run this once on the server: bash server-setup.sh
 set -e
 
-DOMAIN="api.trackify.vision2co.de"
+DOMAIN="api.vision2co.de"
 DEPLOY_DIR="/var/www/trackify"
 REPO="git@github.com:avn-dev/trackify.git"
 
