@@ -16,10 +16,25 @@ struct LabMarkerDetailView: View {
     @State private var range = 0 // 0=1J 1=5J 2=Alles
     @State private var history: [LabHistoryEntry] = []
 
-    private var chartPoints: [LinePoint] {
-        history.reversed().enumerated().map { i, e in
-            LinePoint(x: Double(i), y: e.value, highlighted: i == history.count - 1)
+    private var absMin: Double { max(0, refLow > 0 ? refLow * 0.4 : 0) }
+    private var absMax: Double { refHigh * 1.6 }
+
+    private var filteredHistory: [LabHistoryEntry] {
+        let now = Date()
+        switch range {
+        case 0:
+            let cutoff = Calendar.current.date(byAdding: .year, value: -1, to: now)!
+            return history.filter { $0.date >= cutoff }
+        case 1:
+            let cutoff = Calendar.current.date(byAdding: .year, value: -5, to: now)!
+            return history.filter { $0.date >= cutoff }
+        default:
+            return history
         }
+    }
+
+    private var chartPoints: [LabChartPoint] {
+        filteredHistory.reversed().map { LabChartPoint(date: $0.date, value: $0.value) }
     }
 
     private var delta3m: String {
@@ -65,9 +80,6 @@ struct LabMarkerDetailView: View {
 
                 SectionHead(label: "Einträge").padding(.top, 18)
 
-                let df = DateFormatter()
-                let _ = (df.locale = Locale(identifier: "de_DE"))
-                let _ = (df.dateFormat = "d. MMM")
                 if history.isEmpty {
                     Text("Noch kein Verlauf")
                         .font(.custom(Typography.geistMono, size: 13))
@@ -85,7 +97,7 @@ struct LabMarkerDetailView: View {
                                 return "\(sign) \(Formatters.compact(abs(diff)))"
                             }()
                             entryRow(
-                                date: df.string(from: e.date),
+                                date: Formatters.shortDate(e.date),
                                 value: "\(Formatters.compact(e.value)) \(e.unit)",
                                 delta: deltaStr
                             )
@@ -153,8 +165,8 @@ struct LabMarkerDetailView: View {
                 value: value,
                 refLow: refLow,
                 refHigh: refHigh,
-                absMin: refLow * 0.3,
-                absMax: refHigh * 1.5
+                absMin: absMin,
+                absMax: absMax
             )
             .padding(.top, 16)
         }
@@ -181,51 +193,67 @@ struct LabMarkerDetailView: View {
                 }
             }
 
-            ZStack {
-                // Norm band
-                Chart {
-                    RectangleMark(
-                        xStart: .value("x0", 0),
-                        xEnd: .value("x1", 12),
-                        yStart: .value("low", refLow),
-                        yEnd: .value("high", refHigh)
-                    )
-                    .foregroundStyle(t.accent.opacity(0.08))
-
-                    ForEach([refLow, refHigh], id: \.self) { bound in
-                        RuleMark(y: .value("bound", bound))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                            .foregroundStyle(t.accent.opacity(0.5))
-                    }
-
-                    let displayPoints: [LinePoint] = chartPoints.isEmpty
-                        ? [LinePoint(x: 0, y: value, highlighted: true)]
-                        : chartPoints
-                    ForEach(displayPoints) { p in
-                        LineMark(x: .value("x", p.x), y: .value("y", p.y))
-                            .foregroundStyle(t.text)
-                            .lineStyle(StrokeStyle(lineWidth: 1.75))
-                            .interpolationMethod(.monotone)
-                        AreaMark(x: .value("x", p.x), y: .value("y", p.y))
-                            .foregroundStyle(t.text.opacity(0.06))
-                            .interpolationMethod(.monotone)
-                    }
+            Chart {
+                // ─── Zone bands ───
+                if refLow > 0 {
+                    RectangleMark(yStart: .value("", absMin), yEnd: .value("", refLow))
+                        .foregroundStyle(t.amber.opacity(0.07))
                 }
-                .chartXAxis(.hidden)
-                .chartYAxis {
-                    AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
-                        AxisGridLine().foregroundStyle(t.grid)
-                        AxisValueLabel {
-                            if let n = v.as(Double.self) {
-                                Text(Formatters.compact(n))
-                                    .font(.custom(Typography.geistMono, size: 9))
-                                    .foregroundStyle(t.textMuted)
-                            }
+                RectangleMark(yStart: .value("", max(absMin, refLow)), yEnd: .value("", refHigh))
+                    .foregroundStyle(t.accent.opacity(0.08))
+                RectangleMark(yStart: .value("", refHigh), yEnd: .value("", absMax))
+                    .foregroundStyle(t.danger.opacity(0.07))
+
+                // ─── Zone boundaries ───
+                if refLow > 0 {
+                    RuleMark(y: .value("", refLow))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        .foregroundStyle(t.amber.opacity(0.55))
+                }
+                RuleMark(y: .value("", refHigh))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    .foregroundStyle(t.danger.opacity(0.5))
+
+                // ─── Data line ───
+                let display: [LabChartPoint] = chartPoints.isEmpty
+                    ? [LabChartPoint(date: .now, value: value)]
+                    : chartPoints
+                ForEach(display) { p in
+                    LineMark(x: .value("Datum", p.date), y: .value("Wert", p.value))
+                        .foregroundStyle(t.text)
+                        .lineStyle(StrokeStyle(lineWidth: 1.75))
+                        .interpolationMethod(.monotone)
+                    AreaMark(x: .value("Datum", p.date), y: .value("Wert", p.value))
+                        .foregroundStyle(t.text.opacity(0.06))
+                        .interpolationMethod(.monotone)
+                }
+            }
+            .chartYScale(domain: absMin...absMax)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { v in
+                    AxisGridLine().foregroundStyle(t.grid)
+                    AxisValueLabel {
+                        if let d = v.as(Date.self) {
+                            Text(Formatters.shortDate(d))
+                                .font(.custom(Typography.geistMono, size: 9))
+                                .foregroundStyle(t.textMuted)
                         }
                     }
                 }
             }
-            .frame(height: 160)
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { v in
+                    AxisGridLine().foregroundStyle(t.grid)
+                    AxisValueLabel {
+                        if let n = v.as(Double.self) {
+                            Text(Formatters.compact(n))
+                                .font(.custom(Typography.geistMono, size: 9))
+                                .foregroundStyle(t.textMuted)
+                        }
+                    }
+                }
+            }
+            .frame(height: 180)
             .padding(.top, 12)
         }
     }
@@ -304,6 +332,12 @@ struct LabHistoryEntry: Identifiable {
     var date: Date
     var value: Double
     var unit: String
+}
+
+struct LabChartPoint: Identifiable {
+    let id = UUID()
+    var date: Date
+    var value: Double
 }
 
 #Preview {

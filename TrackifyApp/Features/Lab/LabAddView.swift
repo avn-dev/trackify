@@ -11,6 +11,7 @@ struct LabAddView: View {
     @State private var showDocumentPicker = false
     @State private var manualInputs: [String: String] = [:]
     @State private var sourceText = "Hausarzt"
+    @State private var measurementDate = Date()
 
     private let methods = [
         ("Foto",         "camera.fill"),
@@ -84,7 +85,7 @@ struct LabAddView: View {
     // MARK: - Save
 
     private func save() async {
-        let measurement = LabMeasurement(userID: .localUser, takenAt: .now, source: sourceText)
+        let measurement = LabMeasurement(userID: .localUser, takenAt: measurementDate, source: sourceText)
         if method == 2 {
             // Manual: iterate known markers
             for def in LabMarkerDef.all {
@@ -312,17 +313,32 @@ struct LabAddView: View {
     @ViewBuilder private var manualForm: some View {
         VStack(spacing: 0) {
             Card(pad: 0) {
-                HStack {
-                    Text("Quelle")
-                        .font(.custom(Typography.geist, size: 14))
-                        .foregroundStyle(t.textMid)
-                        .frame(width: 72, alignment: .leading)
-                    TextField("z.B. Hausarzt", text: $sourceText)
-                        .font(.custom(Typography.geist, size: 15))
-                        .foregroundStyle(t.text)
-                    Spacer()
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Quelle")
+                            .font(.custom(Typography.geist, size: 14))
+                            .foregroundStyle(t.textMid)
+                            .frame(width: 72, alignment: .leading)
+                        TextField("z.B. Hausarzt", text: $sourceText)
+                            .font(.custom(Typography.geist, size: 15))
+                            .foregroundStyle(t.text)
+                        Spacer()
+                    }
+                    .padding(.horizontal, Spacing.l).padding(.vertical, 14)
+
+                    Divider().background(t.border).padding(.horizontal, Spacing.l)
+
+                    DatePicker(
+                        "Datum",
+                        selection: $measurementDate,
+                        in: ...Date.now,
+                        displayedComponents: .date
+                    )
+                    .font(.custom(Typography.geist, size: 14))
+                    .foregroundStyle(t.textMid)
+                    .tint(t.accent)
+                    .padding(.horizontal, Spacing.l).padding(.vertical, 10)
                 }
-                .padding(.horizontal, Spacing.l).padding(.vertical, 14)
             }
             .padding(.horizontal, Spacing.xl)
             .padding(.top, 16)

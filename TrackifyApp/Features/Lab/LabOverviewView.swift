@@ -6,25 +6,28 @@ struct LabOverviewView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showAdd = false
     @State private var showReport = false
-    @State private var measurement: LabMeasurement?
-    @State private var previousMeasurement: LabMeasurement?
+    @State private var latestEntries: [(value: LabValue, date: Date)] = []
+    @State private var previousValues: [String: Double] = [:]
+
+    // MARK: - Computed
+
+    private var latestDate: Date? { latestEntries.map(\.date).max() }
 
     private var categories: [(name: String, markers: [LabMarker])] {
-        guard let m = measurement else { return [] }
-        var order: [String] = []
+        guard !latestEntries.isEmpty else { return [] }
+        let categoryOrder = ["Vitamine & Mineralstoffe", "Blutfette", "Hormone", "Blutbild", "Niere & Leber"]
         var dict: [String: [LabMarker]] = [:]
-        let prevValues: [String: Double] = previousMeasurement.map { pm in
-            Dictionary(uniqueKeysWithValues: pm.values.map { ($0.marker, $0.value) })
-        } ?? [:]
-        for v in m.values {
-            if !order.contains(v.category) { order.append(v.category) }
+
+        for entry in latestEntries {
+            let v = entry.value
             let range: String = v.refLow <= 0
                 ? "< \(Formatters.compact(v.refHigh))"
                 : "\(Formatters.compact(v.refLow))–\(Formatters.compact(v.refHigh))"
+            let prev = previousValues[v.marker]
             let trend: TrendDir = {
-                guard let prev = prevValues[v.marker] else { return .flat }
-                if v.value > prev + 0.01 { return .up }
-                if v.value < prev - 0.01 { return .down }
+                guard let p = prev else { return .flat }
+                if v.value > p + 0.01 { return .up }
+                if v.value < p - 0.01 { return .down }
                 return .flat
             }()
             let marker = LabMarker(
@@ -41,20 +44,31 @@ struct LabOverviewView: View {
             )
             dict[v.category, default: []].append(marker)
         }
-        return order.compactMap { cat in dict[cat].map { (cat, $0) } }
+
+        let ordered = categoryOrder.compactMap { cat -> (String, [LabMarker])? in
+            guard let markers = dict[cat] else { return nil }
+            return (cat, markers.sorted { $0.name < $1.name })
+        }
+        let remaining = dict.keys.filter { !categoryOrder.contains($0) }.sorted().compactMap { cat -> (String, [LabMarker])? in
+            guard let markers = dict[cat] else { return nil }
+            return (cat, markers.sorted { $0.name < $1.name })
+        }
+        return ordered + remaining
     }
 
     private var normalCount: Int { categories.flatMap(\.markers).filter { $0.status == .normal }.count }
-    private var highCount: Int   { categories.flatMap(\.markers).filter { $0.status == .high }.count }
-    private var lowCount: Int    { categories.flatMap(\.markers).filter { $0.status == .low }.count }
-    private var total: Int       { categories.flatMap(\.markers).count }
+    private var highCount:   Int { categories.flatMap(\.markers).filter { $0.status == .high }.count }
+    private var lowCount:    Int { categories.flatMap(\.markers).filter { $0.status == .low }.count }
+    private var total:       Int { categories.flatMap(\.markers).count }
 
     private var headerEyebrow: String {
-        measurement.map { "Labor · \(Formatters.shortDate($0.takenAt))" } ?? "Labor"
+        latestDate.map { "Labor · \(Formatters.shortDate($0))" } ?? "Labor"
     }
     private var summaryEyebrow: String {
-        measurement.map { "\($0.source) · \(Formatters.shortDate($0.takenAt))" } ?? "Keine Messung"
+        latestDate.map { "Aktuell · \(Formatters.shortDate($0))" } ?? "Keine Messung"
     }
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
@@ -64,7 +78,7 @@ struct LabOverviewView: View {
                     CircleBtn(systemIcon: "plus") { showAdd = true }
                 }
 
-                if measurement == nil {
+                if latestEntries.isEmpty {
                     labEmptyState
                 } else {
                     summaryCard.padding(.horizontal, Spacing.xl)
@@ -95,15 +109,44 @@ struct LabOverviewView: View {
                 .environment(deps)
         }
         .sheet(isPresented: $showReport) {
-            if let m = measurement {
-                ThemedRoot { LabReportSheet(measurement: m, categories: categories) }
+            ThemedRoot {
+                LabReportSheet(
+                    categories: categories,
+                    date: latestDate ?? .now,
+                    source: "Gesamt"
+                )
             }
         }
-        .task { await loadMeasurement() }
+        .task { await loadLatestPerMarker() }
         .onChange(of: showAdd) { _, isShowing in
-            if !isShowing { Task { await loadMeasurement() } }
+            if !isShowing { Task { await loadLatestPerMarker() } }
         }
     }
+
+    // MARK: - Load
+
+    private func loadLatestPerMarker() async {
+        let all = (try? await deps.lab.fetchMeasurements(limit: 200)) ?? []
+        var seenMarkers = Set<String>()
+        var latest: [(value: LabValue, date: Date)] = []
+        var previous: [String: Double] = [:]
+
+        for m in all { // newest first
+            for v in m.values {
+                if !seenMarkers.contains(v.marker) {
+                    seenMarkers.insert(v.marker)
+                    latest.append((value: v, date: m.takenAt))
+                } else if previous[v.marker] == nil {
+                    previous[v.marker] = v.value
+                }
+            }
+        }
+
+        self.latestEntries = latest
+        self.previousValues = previous
+    }
+
+    // MARK: - Views
 
     @ViewBuilder private var labEmptyState: some View {
         VStack(spacing: 14) {
@@ -121,12 +164,6 @@ struct LabOverviewView: View {
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
         .padding(.horizontal, Spacing.xl)
-    }
-
-    private func loadMeasurement() async {
-        let recent = (try? await deps.lab.fetchMeasurements(limit: 2)) ?? []
-        measurement = recent.first
-        previousMeasurement = recent.count > 1 ? recent[1] : nil
     }
 
     @ViewBuilder private var summaryCard: some View {
@@ -155,19 +192,21 @@ struct LabOverviewView: View {
                 }
             }
 
-            GeometryReader { geo in
-                HStack(spacing: 2) {
-                    let w = geo.size.width
-                    RoundedRectangle(cornerRadius: 3).fill(t.accent)
-                        .frame(width: w * CGFloat(normalCount) / CGFloat(total), height: 8)
-                    RoundedRectangle(cornerRadius: 3).fill(t.danger)
-                        .frame(width: w * CGFloat(highCount) / CGFloat(total), height: 8)
-                    RoundedRectangle(cornerRadius: 3).fill(t.amber)
-                        .frame(width: w * CGFloat(lowCount) / CGFloat(total), height: 8)
+            if total > 0 {
+                GeometryReader { geo in
+                    HStack(spacing: 2) {
+                        let w = geo.size.width
+                        RoundedRectangle(cornerRadius: 3).fill(t.accent)
+                            .frame(width: w * CGFloat(normalCount) / CGFloat(total), height: 8)
+                        RoundedRectangle(cornerRadius: 3).fill(t.danger)
+                            .frame(width: w * CGFloat(highCount) / CGFloat(total), height: 8)
+                        RoundedRectangle(cornerRadius: 3).fill(t.amber)
+                            .frame(width: w * CGFloat(lowCount) / CGFloat(total), height: 8)
+                    }
                 }
+                .frame(height: 8)
+                .padding(.top, 12)
             }
-            .frame(height: 8)
-            .padding(.top, 12)
 
             GhostButton(title: "Bericht ansehen") { showReport = true }
                 .frame(height: 40)
@@ -281,7 +320,6 @@ struct LabMarker: Hashable {
     var range: String
     var value: String
     var trend: TrendDir
-    // Raw data for detail navigation
     var rawValue: Double = 0
     var unit: String = ""
     var refLow: Double = 0
@@ -296,8 +334,9 @@ enum TrendDir: Hashable { case up, down, flat }
 struct LabReportSheet: View {
     @Environment(\.theme) private var t
     @Environment(\.dismiss) private var dismiss
-    var measurement: LabMeasurement
     var categories: [(name: String, markers: [LabMarker])]
+    var date: Date
+    var source: String
 
     private var normalCount: Int { categories.flatMap(\.markers).filter { $0.status == .normal }.count }
     private var highCount:   Int { categories.flatMap(\.markers).filter { $0.status == .high }.count }
@@ -306,8 +345,8 @@ struct LabReportSheet: View {
 
     private var reportText: String {
         var lines: [String] = [
-            "Laborbericht – \(Formatters.shortDate(measurement.takenAt))",
-            "Quelle: \(measurement.source)",
+            "Laborbericht – \(Formatters.shortDate(date))",
+            "Quelle: \(source)",
             "",
             "Ergebnis: \(normalCount)/\(total) Marker im Normbereich",
             ""
@@ -328,10 +367,9 @@ struct LabReportSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    // Summary card
                     Card(pad: Spacing.l) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Eyebrow(text: "\(measurement.source) · \(Formatters.shortDate(measurement.takenAt))")
+                            Eyebrow(text: "\(source) · \(Formatters.shortDate(date))")
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
                                 Text("\(normalCount)")
                                     .font(Typography.number(40))
@@ -346,9 +384,9 @@ struct LabReportSheet: View {
                                 .foregroundStyle(t.textMuted)
 
                             HStack(spacing: 12) {
-                                statusBadge(label: "Normal", count: normalCount, color: t.accent)
-                                statusBadge(label: "Zu hoch", count: highCount, color: t.danger)
-                                statusBadge(label: "Zu niedrig", count: lowCount, color: t.amber)
+                                statusBadge(label: "Normal",     count: normalCount, color: t.accent)
+                                statusBadge(label: "Zu hoch",    count: highCount,   color: t.danger)
+                                statusBadge(label: "Zu niedrig", count: lowCount,    color: t.amber)
                             }
                             .padding(.top, 4)
                         }
@@ -356,7 +394,6 @@ struct LabReportSheet: View {
                     .padding(.horizontal, Spacing.xl)
                     .padding(.top, Spacing.l)
 
-                    // Category sections
                     ForEach(categories, id: \.name) { cat in
                         reportCategorySection(cat)
                     }
@@ -415,7 +452,6 @@ struct LabReportSheet: View {
             case .low:    return t.amber
             }
         }()
-
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Circle().fill(statusColor).frame(width: 8, height: 8)
@@ -434,7 +470,6 @@ struct LabReportSheet: View {
                     .foregroundStyle(t.text)
             }
             .padding(.horizontal, Spacing.l).padding(.vertical, 14)
-
             if !isLast {
                 Divider().background(t.border).padding(.horizontal, Spacing.l)
             }
