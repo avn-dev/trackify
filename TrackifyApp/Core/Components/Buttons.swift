@@ -5,16 +5,25 @@ struct PrimaryButton: View {
     var title: String
     var systemIcon: String? = nil
     var fullWidth: Bool = true
+    var isLoading: Bool = false
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                if let systemIcon {
-                    Image(systemName: systemIcon).font(.system(size: 16, weight: .semibold))
+            ZStack {
+                HStack(spacing: 8) {
+                    if let systemIcon {
+                        Image(systemName: systemIcon).font(.system(size: 16, weight: .semibold))
+                    }
+                    Text(title)
+                        .font(.custom(Typography.geist, size: 16).weight(.semibold))
                 }
-                Text(title)
-                    .font(.custom(Typography.geist, size: 16).weight(.semibold))
+                .opacity(isLoading ? 0 : 1)
+
+                if isLoading {
+                    ProgressView()
+                        .tint(t.accentText)
+                }
             }
             .foregroundStyle(t.accentText)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: 52)
@@ -22,6 +31,7 @@ struct PrimaryButton: View {
             .background(Capsule().fill(t.accent))
         }
         .buttonStyle(.plain)
+        .disabled(isLoading)
     }
 }
 

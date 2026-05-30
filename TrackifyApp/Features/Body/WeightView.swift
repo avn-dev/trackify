@@ -8,6 +8,7 @@ struct WeightView: View {
     @State private var metrics: [BodyMetric] = []
     @State private var showEntry = false
     @State private var isImportingHK = false
+    @State private var metricToDelete: BodyMetric? = nil
 
     @AppStorage("goalWeightKg")  private var goalKg      = 70.0
     @AppStorage("goalHeightCm")  private var heightCm    = 178.0
@@ -64,8 +65,9 @@ struct WeightView: View {
                 statsRow.padding(.horizontal, Spacing.xl).padding(.top, 12)
                 SectionHead(
                     label: "Einträge",
-                    action: hkWeightSync ? (isImportingHK ? "…" : "Von Health") : "",
-                    onAction: hkWeightSync ? { Task { await importFromHealthKit() } } : nil
+                    action: hkWeightSync && !isImportingHK ? "Von Health" : nil,
+                    onAction: hkWeightSync ? { Task { await importFromHealthKit() } } : nil,
+                    isLoading: isImportingHK
                 ).padding(.top, 18)
 
                 if metrics.isEmpty {
@@ -92,7 +94,7 @@ struct WeightView: View {
                             entryRow(date: m.ts, value: m.value, delta: m.value - prev)
                                 .contextMenu {
                                     Button(role: .destructive) {
-                                        Task { await deleteMetric(m) }
+                                        metricToDelete = m
                                     } label: {
                                         Label("Löschen", systemImage: "trash")
                                     }
@@ -107,6 +109,18 @@ struct WeightView: View {
         .background(t.bg.ignoresSafeArea())
         .navigationBarHidden(true)
         .task { await loadMetrics() }
+        .confirmationDialog("Eintrag löschen?", isPresented: Binding(
+            get: { metricToDelete != nil },
+            set: { if !$0 { metricToDelete = nil } }
+        ), titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
+                if let m = metricToDelete { Task { await deleteMetric(m) } }
+                metricToDelete = nil
+            }
+            Button("Abbrechen", role: .cancel) { metricToDelete = nil }
+        } message: {
+            Text("Dieser Eintrag wird dauerhaft entfernt.")
+        }
         .sheet(isPresented: $showEntry) {
             MetricEntrySheet(type: .weight, onSave: { value in
                 Task { await saveMetric(value) }

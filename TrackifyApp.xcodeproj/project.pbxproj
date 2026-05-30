@@ -140,7 +140,7 @@
 		7D965C7A70C4169D65444D4D /* BodySilhouettePath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodySilhouettePath.swift; sourceTree = "<group>"; };
 		7E39BFEB240B55058A5741BF /* BodyMetric.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyMetric.swift; sourceTree = "<group>"; };
 		7FBF7A26785564CE5CB0004F /* Buttons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buttons.swift; sourceTree = "<group>"; };
-		813D070F20ACB2887EA912A3 /* TrackifyApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TrackifyApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		813D070F20ACB2887EA912A3 /* TrackifyApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TrackifyApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		83AB223E535F1752B1DA5DD5 /* SwiftDataWorkoutRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataWorkoutRepository.swift; sourceTree = "<group>"; };
 		842A7591EFCE04980D0BD1B4 /* SwiftDataBodyMetricRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataBodyMetricRepository.swift; sourceTree = "<group>"; };
 		85927B545F46FE504AFAF9F7 /* TrainingPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanView.swift; sourceTree = "<group>"; };
@@ -505,9 +505,6 @@
 					4C28FCDEBD3D58EDF53E7EBB = {
 						DevelopmentTeam = "";
 					};
-					5E949FEF975D991BC85D7523 = {
-						DevelopmentTeam = "";
-					};
 				};
 			};
 			buildConfigurationList = EBF7229E461EB3EC49943A97 /* Build configuration list for PBXProject "TrackifyApp" */;
@@ -640,6 +637,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = TrackifyApp/TrackifyApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = L7A766Q9W5;
 				INFOPLIST_FILE = TrackifyApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -673,6 +671,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = TrackifyApp/TrackifyApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = L7A766Q9W5;
 				INFOPLIST_FILE = TrackifyApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

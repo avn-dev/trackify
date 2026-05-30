@@ -13,6 +13,7 @@ struct RunHistoryView: View {
     @AppStorage("locationPrePromptShown") private var locationPrePromptShown = false
     @State private var showLocationPrePrompt = false
     @State private var fetchedRuns: [Run] = []
+    @State private var runToDelete: RunSummary? = nil
     @State private var summary = RunMonthlySummary(totalDistanceM: 0, count: 0,
                                                     weeklyDistances: [], avgPaceSecPerKm: 0)
 
@@ -72,7 +73,7 @@ struct RunHistoryView: View {
                             }
                             .contextMenu {
                                 Button(role: .destructive) {
-                                    Task { await deleteRun(run) }
+                                    runToDelete = run
                                 } label: {
                                     Label("Löschen", systemImage: "trash")
                                 }
@@ -119,6 +120,18 @@ struct RunHistoryView: View {
             Button("Letzter Monat") { filterOffset = 1 }
             Button("Alles") { filterOffset = -1 }
             Button("Abbrechen", role: .cancel) {}
+        }
+        .confirmationDialog("Lauf löschen?", isPresented: Binding(
+            get: { runToDelete != nil },
+            set: { if !$0 { runToDelete = nil } }
+        ), titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
+                if let r = runToDelete { Task { await deleteRun(r) } }
+                runToDelete = nil
+            }
+            Button("Abbrechen", role: .cancel) { runToDelete = nil }
+        } message: {
+            Text("Dieser Lauf wird dauerhaft entfernt.")
         }
         .task { await loadData() }
     }

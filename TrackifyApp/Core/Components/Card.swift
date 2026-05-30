@@ -24,6 +24,7 @@ struct SectionHead: View {
     var label: String
     var action: String? = nil
     var onAction: (() -> Void)? = nil
+    var isLoading: Bool = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
@@ -32,7 +33,9 @@ struct SectionHead: View {
                 .kerning(Tracking.eyebrow)
                 .foregroundStyle(t.textMuted)
             Spacer()
-            if let action {
+            if isLoading {
+                ProgressView().scaleEffect(0.7)
+            } else if let action {
                 Button(action: { onAction?() }) {
                     Text(action)
                         .font(Typography.bodySmall)

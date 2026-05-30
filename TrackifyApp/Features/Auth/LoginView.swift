@@ -52,11 +52,10 @@ struct LoginView: View {
                         .padding(.top, 8)
                 }
 
-                PrimaryButton(title: isLoading ? "..." : "Login", systemIcon: "arrow.right") {
+                PrimaryButton(title: "Login", systemIcon: "arrow.right", isLoading: isLoading) {
                     Task { await doLogin() }
                 }
                 .padding(.top, 20)
-                .disabled(isLoading)
 
                 AuthDivider(label: "oder weiter mit")
 

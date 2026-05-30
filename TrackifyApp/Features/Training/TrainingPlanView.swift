@@ -13,6 +13,7 @@ struct TrainingPlanView: View {
     @State private var history: [Workout] = []
     @State private var expandedWorkoutID: UUID?
     @State private var editingWorkout: Workout? = nil
+    @State private var workoutToDelete: Workout? = nil
 
     private var activePlan: PlanConfig {
         _ = planStoreVersion
@@ -57,6 +58,18 @@ struct TrainingPlanView: View {
                 await saveSetEdits(workout: w, edits: edits)
             }}
             .presentationDragIndicator(.visible)
+        }
+        .confirmationDialog("Workout löschen?", isPresented: Binding(
+            get: { workoutToDelete != nil },
+            set: { if !$0 { workoutToDelete = nil } }
+        ), titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
+                if let w = workoutToDelete { Task { await deleteWorkout(w) } }
+                workoutToDelete = nil
+            }
+            Button("Abbrechen", role: .cancel) { workoutToDelete = nil }
+        } message: {
+            Text("Dieser Eintrag wird dauerhaft entfernt.")
         }
     }
 
@@ -276,7 +289,7 @@ struct TrainingPlanView: View {
                     historyRow(workout)
                         .contextMenu {
                             Button(role: .destructive) {
-                                Task { await deleteWorkout(workout) }
+                                workoutToDelete = workout
                             } label: {
                                 Label("Löschen", systemImage: "trash")
                             }

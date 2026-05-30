@@ -7,6 +7,7 @@ struct BodyFatView: View {
     @State private var range = 0 // 0=6M 1=1J
     @State private var metrics: [BodyMetric] = []
     @State private var showEntry = false
+    @State private var metricToDelete: BodyMetric? = nil
     @AppStorage("bodyFatMethod") private var bodyFatMethod = "caliper"
 
     private let maxDisplay = 30.0
@@ -111,7 +112,7 @@ struct BodyFatView: View {
                             entryRow(date: m.ts, value: m.value, delta: m.value - prev)
                                 .contextMenu {
                                     Button(role: .destructive) {
-                                        Task { await deleteMetric(m) }
+                                        metricToDelete = m
                                     } label: {
                                         Label("Löschen", systemImage: "trash")
                                     }
@@ -126,6 +127,18 @@ struct BodyFatView: View {
         .background(t.bg.ignoresSafeArea())
         .navigationBarHidden(true)
         .task { await loadData() }
+        .confirmationDialog("Eintrag löschen?", isPresented: Binding(
+            get: { metricToDelete != nil },
+            set: { if !$0 { metricToDelete = nil } }
+        ), titleVisibility: .visible) {
+            Button("Löschen", role: .destructive) {
+                if let m = metricToDelete { Task { await deleteMetric(m) } }
+                metricToDelete = nil
+            }
+            Button("Abbrechen", role: .cancel) { metricToDelete = nil }
+        } message: {
+            Text("Dieser Eintrag wird dauerhaft entfernt.")
+        }
         .sheet(isPresented: $showEntry) {
             MetricEntrySheet(type: .bodyFat) { value in
                 Task { await saveMetric(value) }

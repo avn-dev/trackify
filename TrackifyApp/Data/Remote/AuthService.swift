@@ -21,11 +21,11 @@ struct RemoteUser: Decodable {
 /// Calls Laravel Sanctum endpoints. Tokens are stored in the Keychain.
 ///
 /// Expected Laravel routes (api.php):
-///   POST /api/auth/login        → AuthTokenResponse
-///   POST /api/auth/register     → AuthTokenResponse
-///   POST /api/auth/apple        → AuthTokenResponse
-///   POST /api/auth/logout       → 204
-///   GET  /api/auth/me           → RemoteUser
+///   POST /auth/login        → AuthTokenResponse
+///   POST /auth/register     → AuthTokenResponse
+///   POST /auth/apple        → AuthTokenResponse
+///   POST /auth/logout       → 204
+///   GET  /auth/me           → RemoteUser
 @MainActor
 final class AuthService {
 
@@ -37,7 +37,7 @@ final class AuthService {
     /// Returns the stored user if the token is still valid.
     func restoreSession() async -> RemoteUser? {
         guard KeychainService.shared.token != nil else { return nil }
-        return try? await api.get("/api/auth/me")
+        return try? await api.get("/auth/me")
     }
 
     // MARK: - Email / password
@@ -45,7 +45,7 @@ final class AuthService {
     func signIn(email: String, password: String) async throws -> RemoteUser {
         struct Body: Encodable { let email: String; let password: String }
         let response: AuthTokenResponse = try await api.post(
-            "/api/auth/login",
+            "/auth/login",
             body: Body(email: email, password: password)
         )
         KeychainService.shared.token = response.token
@@ -55,7 +55,7 @@ final class AuthService {
     func signUp(email: String, password: String, name: String) async throws -> RemoteUser {
         struct Body: Encodable { let name: String; let email: String; let password: String }
         let response: AuthTokenResponse = try await api.post(
-            "/api/auth/register",
+            "/auth/register",
             body: Body(name: name, email: email, password: password)
         )
         KeychainService.shared.token = response.token
@@ -68,7 +68,7 @@ final class AuthService {
     func signInWithApple(idToken: String, nonce: String) async throws -> RemoteUser {
         struct Body: Encodable { let identityToken: String; let nonce: String }
         let response: AuthTokenResponse = try await api.post(
-            "/api/auth/apple",
+            "/auth/apple",
             body: Body(identityToken: idToken, nonce: nonce)
         )
         KeychainService.shared.token = response.token
@@ -80,13 +80,13 @@ final class AuthService {
     func resetPassword(email: String) async throws {
         struct Body: Encodable { let email: String }
         struct Empty: Decodable {}
-        let _: Empty = try await api.post("/api/auth/password/reset", body: Body(email: email))
+        let _: Empty = try await api.post("/auth/password/reset", body: Body(email: email))
     }
 
     // MARK: - Sign out
 
     func signOut() async throws {
-        try await api.post("/api/auth/logout")
+        try await api.post("/auth/logout")
         KeychainService.shared.token = nil
     }
 }

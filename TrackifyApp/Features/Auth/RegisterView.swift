@@ -11,6 +11,7 @@ struct RegisterView: View {
     @State private var password = ""
     @State private var agreedToTerms = false
     @State private var isLoading = false
+    @State private var error: String?
     @State private var showGoogleAlert = false
     @State private var currentNonce: String?
 
@@ -72,7 +73,15 @@ struct RegisterView: View {
                 }
                 .padding(.top, 28)
 
-                PrimaryButton(title: "Konto erstellen", systemIcon: "arrow.right") {
+                if let error {
+                    Text(error)
+                        .font(.custom(Typography.geist, size: 13))
+                        .foregroundStyle(t.danger)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                }
+
+                PrimaryButton(title: "Konto erstellen", systemIcon: "arrow.right", isLoading: isLoading) {
                     Task { await doRegister() }
                 }
                 .disabled(!agreedToTerms || isLoading)
@@ -104,10 +113,13 @@ struct RegisterView: View {
     }
 
     private func doRegister() async {
+        error = nil
         isLoading = true
         do {
             try await auth.signUp(email: email, password: password, name: name)
-        } catch {}
+        } catch {
+            self.error = (error as? APIError)?.errorDescription ?? "Registrierung fehlgeschlagen."
+        }
         isLoading = false
     }
 
